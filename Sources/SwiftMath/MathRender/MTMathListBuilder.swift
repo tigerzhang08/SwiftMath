@@ -930,6 +930,7 @@ public struct MTMathListBuilder {
         ]
     }
 
+    typealias ManualDelimiterRole = MTLargeDelimiter.Role
     enum ManualDelimiterRole {
         case automatic
         case left
