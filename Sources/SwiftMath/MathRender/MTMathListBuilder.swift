@@ -595,6 +595,13 @@ public struct MTMathListBuilder {
                     if let accent = atom as? MTAccent {
                         str += "\\\(MTMathAtomFactory.accentName(accent)!){\(mathListToString(accent.innerList!))}"
                     }
+                } else if let largeDelimiter = atom as? MTLargeDelimiter {
+                    if let boundary = MTMathAtomFactory.boundary(forDelimiter: largeDelimiter.delimiterName) {
+                        let delimString = Self.delimToString(delim: boundary)
+                        str += "\\\(largeDelimiter.command)\(delimString) "
+                    } else {
+                        str += "\\\(largeDelimiter.command)\(largeDelimiter.nucleus) "
+                    }
                 } else if atom.type == .largeOperator {
                     let op = atom as! MTLargeOperator
                     let command = MTMathAtomFactory.latexSymbolName(for: atom)
@@ -667,6 +674,10 @@ public struct MTMathListBuilder {
     }
     
     mutating func atomForCommand(_ command:String) -> MTMathAtom? {
+        if let (role, size) = Self.manualDelimiterInfo(for: command) {
+            return self.makeManualDelimiter(command: command, role: role, size: size)
+        }
+
         if let atom = MTMathAtomFactory.atom(forLatexSymbol: command) {
             return atom
         }
@@ -917,6 +928,49 @@ public struct MTMathListBuilder {
             "brack" : [ "[", "]"],
             "brace" : [ "{", "}"]
         ]
+    }
+
+    typealias ManualDelimiterRole = MTLargeDelimiter.Role
+
+    static let manualDelimiterOpenNames: Set<String> = ["(", "[", "{", "lbrace", "langle", "lceil", "lfloor", "lgroup", "<"]
+    static let manualDelimiterCloseNames: Set<String> = [")", "]", "}", "rbrace", "rangle", "rceil", "rfloor", "rgroup", ">"]
+    static let manualDelimiterRelationNames: Set<String> = ["|", "||", "Vert", "vert", "uparrow", "downarrow", "updownarrow",
+                                                            "Uparrow", "Downarrow", "Updownarrow", "/", "\\", "backslash"]
+
+    static func manualDelimiterInfo(for command: String) -> (ManualDelimiterRole, MTLargeDelimiter.Size)? {
+        guard !command.isEmpty else { return nil }
+        var role: ManualDelimiterRole = .automatic
+        var base = command
+
+        if let suffix = base.last, suffix == "l" || suffix == "r" || suffix == "m" {
+            switch suffix {
+                case "l": role = .left
+                case "r": role = .right
+                case "m": role = .middle
+                default: break
+            }
+            base.removeLast()
+        }
+
+        let size: MTLargeDelimiter.Size?
+        switch base {
+            case "big": size = .big
+            case "Big": size = .Big
+            case "bigg": size = .bigg
+            case "Bigg": size = .Bigg
+            default: size = nil
+        }
+
+        guard let resolvedSize = size else { return nil }
+        return (role, resolvedSize)
+    }
+
+    static func defaultManualDelimiterType(for delimiter: String) -> MTMathAtomType {
+        if manualDelimiterCloseNames.contains(delimiter) { return .close }
+        if manualDelimiterRelationNames.contains(delimiter) { return .relation }
+        if manualDelimiterOpenNames.contains(delimiter) { return .open }
+        if delimiter == "." { return .open }
+        return .open
     }
     
     mutating func stopCommand(_ command: String, list:MTMathList, stopChar:Character?) -> MTMathList? {
@@ -1254,6 +1308,37 @@ public struct MTMathListBuilder {
             return nil
         }
         return boundary
+    }
+
+    mutating func makeManualDelimiter(command: String,
+                                      role: ManualDelimiterRole,
+                                      size: MTLargeDelimiter.Size) -> MTMathAtom? {
+        let delim = self.readDelimiter()
+        if delim == nil {
+            let errorMessage = "Missing delimiter for \\\(command)"
+            self.setError(.missingDelimiter, message: errorMessage)
+            return nil
+        }
+        guard let boundary = MTMathAtomFactory.boundary(forDelimiter: delim!) else {
+            let errorMessage = "Invalid delimiter for \(command): \(delim!)"
+            self.setError(.invalidDelimiter, message: errorMessage)
+            return nil
+        }
+
+        let baseType: MTMathAtomType
+        switch role {
+            case .left: baseType = .open
+            case .right: baseType = .close
+            case .middle: baseType = .relation
+            case .automatic: baseType = Self.defaultManualDelimiterType(for: delim!)
+        }
+
+        return MTLargeDelimiter(delimiterName: delim!,
+                                delimiterValue: boundary.nucleus,
+                                size: size,
+                                role: role,
+                                command: command,
+                                type: baseType)
     }
     
     mutating func readDelimiter() -> String? {

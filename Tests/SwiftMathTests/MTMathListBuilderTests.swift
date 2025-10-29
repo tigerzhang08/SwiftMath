@@ -906,7 +906,7 @@ final class MTMathListBuilderTests: XCTestCase {
         let str = "\\bar x";
         let list = MTMathListBuilder.build(fromString:str)!
         let desc = "Error for string:\(str)"
-        
+
         XCTAssertNotNil(list, desc);
         XCTAssertEqual((list.atoms.count), 1, desc);
         let accent = list.atoms[0] as! MTAccent
@@ -924,12 +924,22 @@ final class MTMathListBuilderTests: XCTestCase {
         let latex = MTMathListBuilder.mathListToString(list)
         XCTAssertEqual(latex, "\\bar{x}", desc);
     }
-	
-	func testAccentedCharacter() throws {
-		let str = "á"
-		let list = MTMathListBuilder.build(fromString: str)!
-		let desc = "Error for string:\(str)"
-		
+
+    func testHatThetaInlineAccenteeString() throws {
+        let str = "\\hat\\theta"
+        let list = try XCTUnwrap(MTMathListBuilder.build(fromString: str))
+        let accent = try XCTUnwrap(list.atoms.first as? MTAccent)
+        let inner = try XCTUnwrap(accent.innerList)
+        XCTAssertEqual(inner.atoms.count, 1)
+        XCTAssertEqual(inner.atoms[0].nucleus, "\u{03B8}")
+        XCTAssertEqual(MTTypesetter.inlineAccenteeString(for: inner), "\u{03B8}")
+    }
+
+        func testAccentedCharacter() throws {
+                let str = "á"
+                let list = MTMathListBuilder.build(fromString: str)!
+                let desc = "Error for string:\(str)"
+
 		XCTAssertNotNil(list, desc)
 		XCTAssertEqual((list.atoms.count), 1, desc)
 		let accent = list.atoms[0] as! MTAccent
@@ -1883,6 +1893,26 @@ final class MTMathListBuilderTests: XCTestCase {
             XCTAssertNil(error, "Should not error on \\\(cmd): \(error?.localizedDescription ?? "")")
             XCTAssertTrue(unwrappedList.atoms.count >= 1, "\\\(cmd) should have at least one atom")
         }
+    }
+
+    func testUnicodeGreekCharactersDirectInput() throws {
+        let str = "$λ_μ$"
+        var error: NSError? = nil
+        let list = MTMathListBuilder.build(fromString: str, error: &error)
+
+        let mathList = try XCTUnwrap(list, "Should parse direct Unicode Greek characters")
+        XCTAssertNil(error, "Should not error when parsing Unicode Greek characters")
+        XCTAssertEqual(mathList.atoms.count, 1, "Should produce a single lambda atom")
+
+        let lambdaAtom = try XCTUnwrap(mathList.atoms.first, "Expected a lambda atom")
+        XCTAssertEqual(lambdaAtom.nucleus, "\u{03BB}", "Lambda atom nucleus should be λ")
+
+        let subscriptList = try XCTUnwrap(lambdaAtom.subScript, "Lambda should have a subscript list")
+        XCTAssertEqual(subscriptList.atoms.count, 1, "Subscript should contain a single atom")
+        XCTAssertEqual(subscriptList.atoms.first?.nucleus, "\u{03BC}", "Subscript should be μ")
+
+        let latex = MTMathListBuilder.mathListToString(mathList)
+        XCTAssertEqual(latex, "\\lambda _{\\mu }", "Unicode input should round-trip to LaTeX commands")
     }
 
     func testGreekLettersUppercase() throws {
