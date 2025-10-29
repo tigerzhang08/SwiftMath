@@ -486,6 +486,24 @@ class MTTypesetter {
         var prevNode:MTMathAtom? = nil
         var lastType:MTMathAtomType!
         for atom in preprocessed {
+            if let largeDelimiter = atom as? MTLargeDelimiter {
+                if !largeDelimiter.nucleus.isEmpty {
+                    if currentLine.length > 0 {
+                        self.addDisplayLine()
+                    }
+                    self.addInterElementSpace(prevNode, currentType: largeDelimiter.type)
+                    if let display = self.makeLargeDelimiter(largeDelimiter) {
+                        displayAtoms.append(display)
+                        if atom.subScript != nil || atom.superScript != nil {
+                            self.makeScripts(atom, display: display, index: UInt(atom.indexRange.location), delta: 0)
+                        }
+                        lastType = atom.type
+                        prevNode = atom
+                    }
+                }
+                continue
+            }
+
             switch atom.type {
                 case .number, .variable,. unaryOperator:
                     // These should never appear as they should have been removed by preprocessing
@@ -686,11 +704,16 @@ class MTTypesetter {
 
                         let accent = atom as! MTAccent
 
-                        // Get the base character from innerList
+                        // Get the base character from innerList using the actual nuclei so that
+                        // commands like \theta yield their Unicode glyph instead of LaTeX source.
                         var baseChar = ""
                         if let innerList = accent.innerList, !innerList.atoms.isEmpty {
-                            // Convert innerList to string
-                            baseChar = MTMathListBuilder.mathListToString(innerList)
+                            baseChar = Self.inlineAccenteeString(for: innerList)
+                            if baseChar.isEmpty {
+                                // Fallback to the previous behaviour to avoid dropping content in
+                                // unexpected complex cases.
+                                baseChar = MTMathListBuilder.mathListToString(innerList)
+                            }
                         }
 
                         // Combine base character with accent to create proper composed character
@@ -1541,9 +1564,28 @@ class MTTypesetter {
             return display;
         }
     }
-    
+
+    func manualDelimiterHeight(for size: MTLargeDelimiter.Size) -> CGFloat {
+        let fontSize = styleFont.fontSize
+        switch size {
+            case .big:   return fontSize * 0.85
+            case .Big:   return fontSize * 1.15
+            case .bigg:  return fontSize * 1.45
+            case .Bigg:  return fontSize * 1.75
+        }
+    }
+
+    func makeLargeDelimiter(_ delimiter: MTLargeDelimiter) -> MTDisplay? {
+        let glyphHeight = manualDelimiterHeight(for: delimiter.size)
+        guard let display = self.findGlyphForBoundary(delimiter.nucleus, withHeight: glyphHeight) else { return nil }
+        display.position = currentPosition
+        display.range = delimiter.indexRange
+        currentPosition.x += display.width
+        return display
+    }
+
     // MARK: - Large delimiters
-    
+
     // Delimiter shortfall from plain.tex
     static let kDelimiterFactor = CGFloat(901)
     static let kDelimiterShortfallPoints = CGFloat(5)
@@ -1650,6 +1692,24 @@ class MTTypesetter {
             return false
         }
         return true
+    }
+
+    /// Build the inline representation of the accentee by concatenating the
+    /// nuclei of its atoms. Nested accents are flattened recursively.
+    ///
+    /// This is used for the lightweight accent rendering path when line
+    /// wrapping is enabled so that control sequences such as \theta yield their
+    /// Unicode glyph instead of their LaTeX source.
+    static func inlineAccenteeString(for list: MTMathList) -> String {
+        var output = ""
+        for atom in list.atoms {
+            if let accent = atom as? MTAccent, let inner = accent.innerList {
+                output += inlineAccenteeString(for: inner)
+            } else {
+                output += atom.nucleus
+            }
+        }
+        return output
     }
     
     // The distance the accent must be moved from the beginning.

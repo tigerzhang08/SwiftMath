@@ -216,6 +216,10 @@ public class MTMathAtom: NSObject {
     
     /// Returns a copy of `self`.
     public func copy() -> MTMathAtom {
+        if let largeDelimiter = self as? MTLargeDelimiter {
+            return MTLargeDelimiter(largeDelimiter)
+        }
+
         switch self.type {
             case .largeOperator:
                 return MTLargeOperator(self as? MTLargeOperator)
@@ -432,22 +436,85 @@ public class MTRadical: MTMathAtom {
 // MARK: - MTLargeOperator
 /** A `MTMathAtom` of type `kMTMathAtom.largeOperator`. */
 public class MTLargeOperator: MTMathAtom {
-    
+
     /** Indicates whether the limits (if present) should be displayed
      above and below the operator in display mode.  If limits is false
      then the limits (if present) are displayed like a regular subscript/superscript.
      */
     public var limits: Bool = false
-    
+
     init(_ op:MTLargeOperator?) {
         super.init(op)
         self.type = .largeOperator
         self.limits = op!.limits
     }
-    
+
     init(value: String, limits: Bool) {
         super.init(type: .largeOperator, value: value)
         self.limits = limits
+    }
+}
+
+// MARK: - MTLargeDelimiter
+/** A manually-sized delimiter produced by commands like `\bigl` or `\Bigg`. */
+public class MTLargeDelimiter: MTMathAtom {
+
+    public enum Size {
+        case big
+        case Big
+        case bigg
+        case Bigg
+    }
+
+    public enum Role {
+        case automatic
+        case left
+        case right
+        case middle
+    }
+
+    /// The requested delimiter size.
+    public var size: Size
+    /// The semantic role requested by the command (open, close, middle, or automatic).
+    public var role: Role
+    /// The original delimiter token used in the LaTeX input (e.g. `(`, `langle`, `||`).
+    public var delimiterName: String
+    /// The original LaTeX command name without the leading backslash (e.g. `bigl`).
+    public var command: String
+
+    init(delimiterName: String,
+         delimiterValue: String,
+         size: Size,
+         role: Role,
+         command: String,
+         type: MTMathAtomType) {
+        self.size = size
+        self.role = role
+        self.delimiterName = delimiterName
+        self.command = command
+        super.init()
+        self.type = type
+        self.nucleus = delimiterValue
+    }
+
+    init(_ delimiter: MTLargeDelimiter?) {
+        self.size = delimiter?.size ?? .big
+        self.role = delimiter?.role ?? .automatic
+        self.delimiterName = delimiter?.delimiterName ?? ""
+        self.command = delimiter?.command ?? "big"
+        super.init(delimiter)
+    }
+
+    override public var description: String {
+        var result = "\\\(command)"
+        if !delimiterName.isEmpty {
+            result += "[\(delimiterName)]"
+        }
+        return result
+    }
+
+    override public var finalized: MTMathAtom {
+        MTLargeDelimiter(self)
     }
 }
 
