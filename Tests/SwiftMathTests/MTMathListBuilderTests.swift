@@ -2144,6 +2144,17 @@ final class MTMathListBuilderTests: XCTestCase {
         }
     }
 
+    func testDirectPartialSymbol() throws {
+        var error: NSError? = nil
+        let str = "$$∂$$"
+        let list = MTMathListBuilder.build(fromString: str, error: &error)
+
+        let unwrappedList = try XCTUnwrap(list, "Should parse direct ∂ symbol")
+        XCTAssertNil(error, "Should not error on direct ∂ symbol: \(error?.localizedDescription ?? "")")
+        XCTAssertEqual(unwrappedList.atoms.count, 1, "Direct ∂ should create a single atom")
+        XCTAssertEqual(unwrappedList.atoms.first?.nucleus, "∂", "∂ nucleus should be preserved")
+    }
+
     func testLogFunctions() throws {
         let logFuncs = ["log", "ln", "lg"]
 
