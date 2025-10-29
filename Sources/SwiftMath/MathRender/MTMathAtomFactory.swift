@@ -613,7 +613,7 @@ public class MTMathAtomFactory {
      cannot be determined for a given character this returns nil.
      This function follows latex conventions for assigning types to the atoms.
      The following characters are not supported and will return nil:
-     - Any non-ascii character.
+     - Any non-supported unicode character.
      - Any control character or spaces (< 0x21)
      - Latex control chars: $ % # & ~ '
      - Chars with special meaning in latex: ^ _ { } \
@@ -622,6 +622,10 @@ public class MTMathAtomFactory {
     public static func atom(forCharacter ch: Character) -> MTMathAtom? {
         let chStr = String(ch)
         switch chStr {
+            case "\u{0391}"..."\u{03A9}",
+                 "\u{03B1}"..."\u{03C9}":
+                // Greek alphabet (uppercase & lowercase)
+                return MTMathAtom(type: .variable, value: chStr)
             case "\u{0410}"..."\u{044F}":
 				// Cyrillic alphabet
                 return MTMathAtom(type: .ordinary, value: chStr)
