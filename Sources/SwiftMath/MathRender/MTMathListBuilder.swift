@@ -931,12 +931,6 @@ public struct MTMathListBuilder {
     }
 
     typealias ManualDelimiterRole = MTLargeDelimiter.Role
-    enum ManualDelimiterRole {
-        case automatic
-        case left
-        case right
-        case middle
-    }
 
     static let manualDelimiterOpenNames: Set<String> = ["(", "[", "{", "lbrace", "langle", "lceil", "lfloor", "lgroup", "<"]
     static let manualDelimiterCloseNames: Set<String> = [")", "]", "}", "rbrace", "rangle", "rceil", "rfloor", "rgroup", ">"]
