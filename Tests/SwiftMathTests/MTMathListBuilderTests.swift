@@ -1957,7 +1957,8 @@ final class MTMathListBuilderTests: XCTestCase {
     func testRelations() throws {
         let relations = ["leq", "geq", "neq", "equiv", "approx", "sim", "simeq", "cong",
                          "prec", "succ", "subset", "supset", "subseteq", "supseteq",
-                         "in", "notin", "ni", "propto", "perp", "parallel"]
+                         "subsetneq", "supsetneq", "in", "notin", "ni", "propto", "perp",
+                         "parallel"]
 
         for rel in relations {
             var error: NSError? = nil
@@ -1976,6 +1977,21 @@ final class MTMathListBuilderTests: XCTestCase {
                 }
             }
             XCTAssertTrue(foundRel, "Should find relation for \\\(rel)")
+        }
+    }
+
+    func testRelationUnicodeSymbols() throws {
+        let symbols: [Character] = ["⊊", "⊋"]
+
+        for symbol in symbols {
+            var error: NSError? = nil
+            let list = MTMathListBuilder.build(fromString: "$\(symbol)$", error: &error)
+
+            let unwrappedList = try XCTUnwrap(list, "Should parse \(symbol)")
+            XCTAssertNil(error, "Should not error on \(symbol): \(error?.localizedDescription ?? "")")
+            XCTAssertEqual(unwrappedList.atoms.count, 1, "Should produce a single atom for \(symbol)")
+            XCTAssertEqual(unwrappedList.atoms.first?.type, .relation, "Symbol \(symbol) should be a relation")
+            XCTAssertEqual(unwrappedList.atoms.first?.nucleus, String(symbol), "Symbol nucleus should match input")
         }
     }
 

@@ -251,6 +251,8 @@ public class MTMathAtomFactory {
         "supset" : MTMathAtom(type: .relation, value: "\u{2283}"),
         "subseteq" : MTMathAtom(type: .relation, value: "\u{2286}"),
         "supseteq" : MTMathAtom(type: .relation, value: "\u{2287}"),
+        "subsetneq" : MTMathAtom(type: .relation, value: "\u{228A}"),
+        "supsetneq" : MTMathAtom(type: .relation, value: "\u{228B}"),
         "sqsubset" : MTMathAtom(type: .relation, value: "\u{228F}"),
         "sqsupset" : MTMathAtom(type: .relation, value: "\u{2290}"),
         "sqsubseteq" : MTMathAtom(type: .relation, value: "\u{2291}"),
@@ -627,11 +629,13 @@ public class MTMathAtomFactory {
                 // Greek alphabet (uppercase & lowercase)
                 return MTMathAtom(type: .variable, value: chStr)
             case "\u{0410}"..."\u{044F}":
-				// Cyrillic alphabet
+                // Cyrillic alphabet
                 return MTMathAtom(type: .ordinary, value: chStr)
-			case _ where supportedAccentedCharacters.keys.contains(ch):
-				// support for áéíóúýàèìòùâêîôûäëïöüÿãñõçøåæœß'ÁÉÍÓÚÝÀÈÌÒÙÂÊÎÔÛÄËÏÖÜÃÑÕÇØÅÆŒ
-				return atom(fromAccentedCharacter: ch)
+            case "\u{228A}", "\u{228B}":
+                return MTMathAtom(type: .relation, value: chStr)
+            case _ where supportedAccentedCharacters.keys.contains(ch):
+                // support for áéíóúýàèìòùâêîôûäëïöüÿãñõçøåæœß'ÁÉÍÓÚÝÀÈÌÒÙÂÊÎÔÛÄËÏÖÜÃÑÕÇØÅÆŒ
+                return atom(fromAccentedCharacter: ch)
             case "∂":
                 return MTMathAtom(type: .ordinary, value: chStr)
             case _ where ch.utf32Char < 0x0021 || ch.utf32Char > 0x007E:
