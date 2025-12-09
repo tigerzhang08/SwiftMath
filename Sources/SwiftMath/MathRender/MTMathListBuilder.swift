@@ -762,11 +762,22 @@ public struct MTMathListBuilder {
             let over = MTOverLine()
             over.innerList = self.buildInternal(true)
             return over
+        } else if command == "overbrace" {
+            // Place a stretching brace above the content
+            let accent = MTAccent(value: "\u{23DE}")
+            accent.innerList = self.buildInternal(true)
+            return accent
         } else if command == "underline" {
             // The underline command has 1 arguments
             let under = MTUnderLine()
             under.innerList = self.buildInternal(true)
             return under
+        } else if command == "underbrace" {
+            // Place a stretching brace below the content
+            let accent = MTAccent(value: "\u{23DF}")
+            accent.isUnder = true
+            accent.innerList = self.buildInternal(true)
+            return accent
         } else if command == "substack" {
             // \substack reads ONE braced argument containing rows separated by \\
             // Similar to how \frac reads {numerator}{denominator}

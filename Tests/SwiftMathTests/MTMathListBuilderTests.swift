@@ -902,6 +902,38 @@ final class MTMathListBuilderTests: XCTestCase {
         XCTAssertEqual(latex, "\\underline{2}", desc);
     }
 
+    func testOverbrace() throws {
+        let str = "\\overbrace{a+b}^n";
+        let list = MTMathListBuilder.build(fromString:str)!;
+        let desc = "Error for string:\(str)";
+
+        XCTAssertEqual(list.atoms.count, 1, desc)
+        let brace = list.atoms[0] as! MTAccent
+        XCTAssertEqual(brace.type, .accent, desc)
+        XCTAssertFalse(brace.isUnder, desc)
+        XCTAssertEqual(brace.nucleus, "\u{23DE}", desc)
+        XCTAssertNotNil(brace.superScript, desc)
+
+        let latex = MTMathListBuilder.mathListToString(list)
+        XCTAssertEqual(latex, "\\overbrace{a+b}^n", desc)
+    }
+
+    func testUnderbraceAliases() throws {
+        let str = "\\Underbraces{xy}_{label}";
+        let list = MTMathListBuilder.build(fromString:str)!;
+        let desc = "Error for string:\(str)";
+
+        XCTAssertEqual(list.atoms.count, 1, desc)
+        let brace = list.atoms[0] as! MTAccent
+        XCTAssertEqual(brace.type, .accent, desc)
+        XCTAssertTrue(brace.isUnder, desc)
+        XCTAssertEqual(brace.nucleus, "\u{23DF}", desc)
+        XCTAssertNotNil(brace.subScript, desc)
+
+        let latex = MTMathListBuilder.mathListToString(list)
+        XCTAssertEqual(latex, "\\underbrace{xy}_{label}", desc)
+    }
+
     func testAccent() throws {
         let str = "\\bar x";
         let list = MTMathListBuilder.build(fromString:str)!

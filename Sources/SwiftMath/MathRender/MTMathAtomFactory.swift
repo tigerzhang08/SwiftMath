@@ -24,7 +24,13 @@ public class MTMathAtomFactory {
         "gets" : "leftarrow",
         "to" : "rightarrow",
         "iff" : "Longleftrightarrow",
-        "AA" : "angstrom"
+        "AA" : "angstrom",
+        "Underbrace" : "underbrace",
+        "underbraces" : "underbrace",
+        "Underbraces" : "underbrace",
+        "Overbrace" : "overbrace",
+        "overbraces" : "overbrace",
+        "Overbraces" : "overbrace"
     ]
     
     public static let delimiters = [
@@ -101,7 +107,9 @@ public class MTMathAtomFactory {
         "check" :  "\u{030C}",
         "vec" :  "\u{20D7}",
         "widehat" :  "\u{0302}",
-        "widetilde" :  "\u{0303}"
+        "widetilde" :  "\u{0303}",
+        "overbrace" : "\u{23DE}",
+        "underbrace" : "\u{23DF}"
     ]
     
     private static let accentValueLock = NSLock()
