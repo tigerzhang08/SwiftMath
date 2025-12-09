@@ -632,6 +632,7 @@ public class MTUnderLine: MTMathAtom {
 
 public class MTAccent: MTMathAtom {
     public var innerList:  MTMathList?
+    public var isUnder: Bool = false
     
     override public var finalized: MTMathAtom {
         let newAccent = super.finalized as! MTAccent
@@ -643,8 +644,9 @@ public class MTAccent: MTMathAtom {
         super.init(accent)
         self.type = .accent
         self.innerList = MTMathList(accent?.innerList)
+        self.isUnder = accent?.isUnder ?? false
     }
-    
+
     init(value: String) {
         super.init()
         self.type = .accent

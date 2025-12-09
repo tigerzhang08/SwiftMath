@@ -1789,13 +1789,21 @@ class MTTypesetter {
         accentGlyph = self.findVariantGlyph(accentGlyph, withMaxWidth:accenteeWidth, maxWidth:&glyphAscent, glyphDescent:&glyphDescent, glyphWidth:&glyphWidth)
         let delta = min(accentee!.ascent, styleFont.mathTable!.accentBaseHeight);
         let skew = self.getSkew(accent, accenteeWidth:accenteeWidth, accentGlyph:accentGlyph)
-        let height = accentee!.ascent - delta;  // This is always positive since delta <= height.
-        let accentPosition = CGPointMake(skew, height);
+        var accentPosition = CGPointMake(skew, accentee!.ascent - delta)
         let accentGlyphDisplay = MTGlyphDisplay(withGlpyh: accentGlyph, range: accent!.indexRange, font: styleFont)
         accentGlyphDisplay.ascent = glyphAscent;
         accentGlyphDisplay.descent = glyphDescent;
         accentGlyphDisplay.width = glyphWidth;
-        accentGlyphDisplay.position = accentPosition;
+
+        if accent?.isUnder == true {
+            let underDelta = min(accentee!.descent, styleFont.mathTable!.accentBaseHeight)
+            accentPosition = CGPointMake(skew, -(accentee!.descent - underDelta + glyphDescent))
+            accentGlyphDisplay.position = accentPosition
+        } else {
+            let height = accentee!.ascent - delta  // This is always positive since delta <= height.
+            accentPosition = CGPointMake(skew, height)
+            accentGlyphDisplay.position = accentPosition;
+        }
 
         if self.isSingleCharAccentee(accent) && (accent!.subScript != nil || accent!.superScript != nil) {
             // Attach the super/subscripts to the accentee instead of the accent.
@@ -1812,9 +1820,16 @@ class MTTypesetter {
 
         let display = MTAccentDisplay(withAccent:accentGlyphDisplay, accentee:accentee, range:accent!.indexRange)
         display.width = accentee!.width;
-        display.descent = accentee!.descent;
-        let ascent = accentee!.ascent - delta + glyphAscent;
-        display.ascent = max(accentee!.ascent, ascent);
+
+        if accent?.isUnder == true {
+            let descent = accentee!.descent - min(accentee!.descent, styleFont.mathTable!.accentBaseHeight) + glyphDescent
+            display.descent = max(accentee!.descent, descent)
+            display.ascent = accentee!.ascent
+        } else {
+            display.descent = accentee!.descent;
+            let ascent = accentee!.ascent - delta + glyphAscent;
+            display.ascent = max(accentee!.ascent, ascent);
+        }
         display.position = currentPosition;
 
         return display;
